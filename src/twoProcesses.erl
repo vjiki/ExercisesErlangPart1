@@ -10,25 +10,28 @@
 -author("golubkin").
 
 %% API
--export([go/1, loop/0]).
+-export([go/2, loop/0]).
 
-go(M) ->
-  Pid1 = spawn(twoProcesses,loop, []),
-  Pid2 = spawn(twoProcesses,loop, []),
-  io:format("going to send hello from PID ~w ~n", [Pid1]),
-  Pid2 ! {Pid1, M}.
+%% Msg - is argument which contains Message
+%% M   - is a number of times which msg shall be sent between two Processes
+go(Msg, M) ->
+    Pid1 = spawn(twoProcesses,loop, []),
+    Pid2 = spawn(twoProcesses,loop, []),
+    %%  io:format("going to send ~p msg from PID ~w to ~w PID ~n", [Msg,Pid1,Pid2]),
+    Pid2 ! {Pid1, Msg, M}.
 
 loop() ->
-  receive
-    {From, M} when is_integer(M), M > 0 ->
-      io:format("loop M: received ~w from PID ~w My PID ~w ~n", [M, From, self()]),
-      From ! {self(), M-1},
-      loop();
-    {From, M} when is_integer(M), M == 0 ->
-      From ! stop,
-      io:format("stopping PID ~w ~n", [self()]),
-      true;
-    stop ->
-      io:format("stopping PID ~w ~n", [self()]),
-      true
-  end.
+    receive
+      {From, Msg, M} when is_integer(M), M > 0 ->
+          %%      io:format("received ~p msg ~w times from PID ~w My PID ~w ~n", [Msg, M, From, self()]),
+          io:format("received ~p msg on PID ~w ~n", [Msg, self()]),
+          From ! {self(), Msg, M-1},
+          loop();
+      {From, _, M} when is_integer(M), M == 0 ->
+          From ! stop,
+          io:format("stopping own PID ~w ~n", [self()]),
+          true;
+      stop ->
+          io:format("stopping PID ~w ~n", [self()]),
+          true
+    end.
